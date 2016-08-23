@@ -1,23 +1,29 @@
 <html>
 	<head>
-		<title><%= title %></title>		
+		<title><%= progName %> - <%= pageName %></title>		
 		<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>				
+
+		<script type="text/javascript" src="js/init.js"></script>
+		<script type="text/javascript" src="js/game.js"></script>
 	</head>
 	<body>
 		<div class="page-wrap">
     		<header>
-				#header...
+				<%= progName %>
 			</header>
 
 			<content>
-				#content...
+				<div id="gamediv" style="display: block; margin-left: auto; margin-right: auto;">
+					<canvas id="gamecanvas" width="400" height="200" style="left: 0; top: 0; z-index: 1; border: 1px solid black;">
+						Your browser is not supported the HTML5 canvas!
+					</canvas>
+				</div>
 			</content>
 
-			<footer>
-				#footer...
+			<footer>				
+				ver.: <%= progVersion %> by <%= progDevloper %> <%= devYear %>
 			</footer>
   		</div>
-  		
 
 	</body>
 </html>
