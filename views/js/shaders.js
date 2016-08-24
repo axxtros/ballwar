@@ -1,21 +1,27 @@
-//shaders.js
+//shaders.js ------------------------------------------------------------------
 
 // Vertex shader program
 var VSHADER_SOURCE =
 	' attribute vec4 a_Position ;\n' +
 	' attribute float a_PointSize ;\n' +
+	' attribute vec4 a_Color;\n' +
+	' varying vec4 v_Color;\n' +
+	' uniform mat4 u_xformMatrix;\n' +
  	'void main() {\n' + 	 	
  	' 	//gl_Position = vec4(0.0, 0.0, 0.0, 1.0);\n' +
- 	'	gl_Position = a_Position;\n' +
+ 	'	//gl_Position = a_Position;\n' +
+ 	' 	gl_Position = a_Position * u_xformMatrix;\n' +
  	'	//gl_PointSize = 10.0;\n' +
  	' 	gl_PointSize = a_PointSize;\n' +
+ 	' 	v_Color = a_Color;\n' +
  	'}\n';
 
 // Fragment shader program
 var FSHADER_SOURCE =	
 	' precision mediump float;\n' +
 	' uniform vec4 u_FragColor;\n' +
+	' varying vec4 v_Color;\n' +
  	'void main() {\n' + 	 	
  	'	//gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n' +
- 	' 	gl_FragColor = u_FragColor;\n' +
+ 	' 	gl_FragColor = v_Color;\n' +
  	'}\n';
