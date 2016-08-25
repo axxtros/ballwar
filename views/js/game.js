@@ -1,8 +1,12 @@
 //game.js ---------------------------------------------------------------------
 
 //constans
+var GAME_SPEED_INDEX = 100;
+var FLOATING_DECIMALS = 2;
+var LEVEL_BORDER = 1.0;
+
 var VISIBLE_DEBUG_INFO = false;
-var GAME_SPEED_INDEX = 5;
+var ANIMATED_BALL = true;
 
 //shader variables
 var a_Position;
@@ -18,30 +22,64 @@ var interval = 1000 / fps;
 var delta;
 var lastCalledTime;
 
-var ry;
-var wry;
-var rh;
-var bx, by; 
-var ballDirection;	//0: right-top, 1: right-bottom, 2: left-bottom, 3: left-top
+var racket = {
+	cmx : 0.9,				//constans webgl matrix x coordinate (init coordinate)
+	cmy : 0.2,				//constans webgl matrix y coordinate (init coordinate)
+	cw  : 0.05,				//constans racket width
+	ch  : 0.4,				//constans racket height
+	tx  : 0,				//webgl transformation x (only use in the transformation matrix)
+	ty  : 0,				//webgl transformation y (only use in the transformation matrix)
+	wx  : 0,				//world x corrdinate
+	wy  : 0,				//world y corrdinate
+	sp  : 0.1,				//speed
+};
 
-var ANIMATED_BALL = true;
+var ball = {
+	cmx : 0.1,				//constans webgl matrix x coordinate (init coordinate)
+	cmy : 0.0,				//constans webgl matrix y coordinate (init coordinate)
+	cd  : 0.1,				//constans ball diamater
+	tx  : 0,				//webgl transformation x (only use in the transformation matrix)
+	ty  : 0,				//webgl transformation y (only use in the transformation matrix)
+	wx  : 0,				//world x corrdinate
+	wy  : 0,				//world y corrdinate
+	dr  : 0,				//direction 0: right-top, 1: right-bottom, 2: left-bottom, 3: left-top
+	sp  : 0.03,				//speed
+};
+
+//webgl object matrices
+var racketVertices = new Float32Array([
+	-racket.cmx,  			 racket.cmy,  			  1.0,  1.0, 0.0, 0.0,
+	-racket.cmx, 			 racket.cmy - racket.ch,  1.0,  1.0, 0.0, 0.0,
+	-racket.cmx + racket.cw, racket.cmy,  			  1.0,  1.0, 0.0, 0.0,
+	-racket.cmx + racket.cw, racket.cmy - racket.ch,  1.0,  1.0, 0.0, 0.0
+]);
+
+var ballVertices = new Float32Array([
+	-ball.cmx,  		 ball.cmy,  		  0.1,  0.5, 0.5, 0.0,
+	-ball.cmx,  		 ball.cmy - ball.cd,  0.1,  0.5, 0.5, 0.0,
+	 ball.cmx - ball.cd, ball.cmy,  		  0.1,  0.5, 0.5, 0.0,
+	 ball.cmx - ball.cd, ball.cmy - ball.cd,  0.1,  0.5, 0.5, 0.0
+]);
 
 function initGame() {
 	//shader variables assigments
 	a_Position = gl.getAttribLocation(glProgram, 'a_Position');
 	a_PointSize = gl.getAttribLocation(glProgram, 'a_PointSize');
 	a_Color = gl.getAttribLocation(glProgram, 'a_Color');
-	u_xformMatrix = gl.getUniformLocation(glProgram, 'u_xformMatrix');
+	u_xformMatrix = gl.getUniformLocation(glProgram, 'u_xformMatrix');	
+
+	//racket world coordinates (left-top vertex coordinate)
+	racket.wx = ffix(-racket.cmx);
+	racket.wy = ffix((racket.ty + racket.cmy));
+	//console.log('racket.ty: ' + racket.ty);
+	//console.log('racket.wy: ' + racket.wy);
+
+	//ball world coordinates (left-top vertex coordinate)
+	ball.wx = ffix(-ball.cmx);
+	ball.wy = ffix(ball.cmy);
+	ball.dr = 3;
 
 	document.addEventListener("keydown", keyDownHandler, true);
-
-	ry = 0;
-	wry = ry + 0.2;
-	rh = 0.4;
-	bx = 0;
-	by = 0;
-	ballDirection = 5;
-
 	then =  Date.now();	
 }
 
@@ -65,78 +103,120 @@ function gameLoop() {
     }
 }
 
+function keyDownHandler(event) {	
+	if (event.keyCode == 38) {	//up
+		racket.ty += racket.sp;
+	}
+	if (event.keyCode == 40) {	//down		
+		racket.ty -= racket.sp;
+	}
+	if (event.keyCode == 37) {	//left		
+		
+	}
+	if (event.keyCode == 39) {	//right				
+		
+	}
+	if (event.keyCode == 32) {	//space - fire
+
+	}	
+	racket.wx = ffix((racket.tx - racket.cmx));
+	racket.wy = ffix((racket.ty + racket.cmy));	
+	racketWallCollision();
+	//console.log('racket.ty: ' + racket.ty);
+	//console.log('racket.wy: ' + racket.wy);
+	//console.log('racket.wx: ' + racket.wx + ' racket.wy: ' + racket.wy);
+}
+
+function racketWallCollision() {
+	if(racket.wy > LEVEL_BORDER) {						//top wall
+		racket.wy = LEVEL_BORDER;
+		racket.ty = racket.wy - racket.cmy;
+	}
+	if((racket.wy - racket.ch) < -LEVEL_BORDER) {		//bottom wall
+		racket.wy = -LEVEL_BORDER;
+		racket.ty = racket.wy + racket.cmy;
+	}
+	racket.wy = ffix((racket.ty + racket.cmy));			//recalculation
+}
+
 /*
  * The webgl system is right handed because the vertical directions is inverted!!!
  */
-function moveBall() {
-	switch(ballDirection) {
-		case 0 : bx += 0.1; by += 0.1; break;	//0: right-top
-		case 1 : bx += 0.1; by -= 0.1; break;	//1: right-bottom
-		case 2 : bx -= 0.1; by -= 0.1; break;	//2: left-bottom
-		case 3 : bx -= 0.1; by += 0.1; break;	//3: left-top
-
-		case 5 : bx -= 0.1; break;
-		case 6 : by += 0.1; break;
-	}	
+function moveBall() {			
+	switch(ball.dr) {
+		case 0 : ball.tx += ball.sp; ball.ty += ball.sp; break;	//0: right-top
+		case 1 : ball.tx += ball.sp; ball.ty -= ball.sp; break;	//1: right-bottom
+		case 2 : ball.tx -= ball.sp; ball.ty -= ball.sp; break;	//2: left-bottom
+		case 3 : ball.tx -= ball.sp; ball.ty += ball.sp; break;	//3: left-top
+		//test
+		case 5 : ball.tx -= ball.sp; break;
+		case 6 : ball.ty += ball.sp; break;
+	}		
+	ball.wx = ffix((-ball.cmx + ball.tx));
+	ball.wy = ffix((ball.cmy + ball.ty));
 	ballCollision();
+	//console.log('ball.wx: ' + ball.wx + ' ball.wy: ' + ball.wy);
 }
 
-function ballCollision() {
-	/*
-	if(by > 1) {
-		if(ballDirection === 0) {
-			ballDirection = 1;
+function ballCollision() {	
+	if(ball.wy > LEVEL_BORDER) {					//top wall				
+		//console.log('ball.wx: ' + ball.wx + ' ball.wy: ' + ball.wy + ' ball.dr: ' + ball.dr);
+		if(ball.dr === 0) {
+			ball.dr = 1;			
 		}
-		if(ballDirection === 3) {
-			ballDirection = 2;
-		}
-		by = 1;
+		if(ball.dr === 3) {
+			ball.dr = 2;			
+		}				
 	}
-	if(by < -1) {
-		if(ballDirection === 1) {
-			ballDirection = 0;
+	if((ball.wy - ball.cd) < -LEVEL_BORDER) {	//bottom wall	
+		//console.log('ball.wx: ' + ball.wx + ' ball.wy: ' + ball.wy + ' ball.dr: ' + ball.dr);	
+		if(ball.dr === 1) {
+			ball.dr = 0;			
 		}
-		if(ballDirection === 2) {
-			ballDirection = 3;
+		if(ball.dr === 2) {
+			ball.dr = 3;			
 		}
-		by = -1;
+	}
+	if(ball.wx < -LEVEL_BORDER) {				//left wall
+		//console.log('ball.wx: ' + ball.wx + ' ball.wy: ' + ball.wy + ' ball.dr: ' + ball.dr);
+		if(ball.dr === 2) {
+			ball.dr = 1;			
+		}
+		if(ball.dr === 3) {		
+			ball.dr = 0;	
+		}
+	}
+	if(ball.wx > LEVEL_BORDER - ball.cd) {		//right wall
+		//console.log('ball.wx: ' + ball.wx + ' ball.wy: ' + ball.wy + ' ball.dr: ' + ball.dr);
+		if(ball.dr === 1) {
+			ball.dr = 2;
+		}
+		if(ball.dr === 0) {
+			ball.dr = 3;			
+		}
 	}	
-	if(bx < -1) {
-		if(ballDirection === 2) {
-			ballDirection = 1;
+	if(ball.wx <= (racket.wx + racket.cw) && collisionRacket()) {		//racket
+		//console.log('ball.wx: ' + ball.wx + ' ball.wy: ' + ball.wy + ' ball.dr: ' + ball.dr);
+		if(ball.dr === 2) {
+			ball.dr = 1;			
 		}
-		if(ballDirection === 3) {
-			ballDirection = 0;
+		if(ball.dr === 3) {		
+			ball.dr = 0;	
 		}
-		bx = -1;
 	}
-	if(bx > 1) {
-		if(ballDirection === 1) {
-			ballDirection = 2;
+}
+
+function collisionRacket() {
+	if(racket.wy >= 0) {
+		if(ball.wy <= racket.wy && ball.wy >= racket.wy - racket.ch) {		//if racket.wy is in the positive domain
+			return true;
 		}
-		if(ballDirection === 0) {
-			ballDirection = 3;
+	} else if(racket.wy < 0) {
+		if(ball.wy <= racket.wy && ball.wy >= racket.wy - racket.ch) {		//if racket.wy is in the negative domain
+			return true;
 		}
-		bx = 1;
 	}
-	*/
-	
-	if(bx < -0.7) {		
-		console.log('utkozes...');
-		console.log('bx: ' + bx + ' by: ' + by);
-		console.log('ry: ' + ry);
-		bx = -0.7;
-		ANIMATED_BALL = false;
-	}
-	/*
-	if(by > 0.7) {
-		console.log('utkozes...');
-		console.log('bx: ' + bx + ' by: ' + by);
-		console.log('ry: ' + ry);
-		by = 0.7;
-		ANIMATED_BALL = false;	
-	}
-	*/
+	return false;
 }
 
 function draw() {
@@ -145,12 +225,12 @@ function draw() {
 	gl.clear(gl.COLOR_BUFFER_BIT);
 
 	//player racket
-	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(0, ry, 0));
+	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(racket.tx, racket.ty, 0));
 	var n = initPlayerRacket(gl);	
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
 
 	//ball
-	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(bx, by, 0));
+	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(ball.tx, ball.ty, 0));
 	var m = initBall(gl);	
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, m);
 
@@ -160,42 +240,13 @@ function draw() {
 	*/
 }
 
-function keyDownHandler(event) {	
-	if (event.keyCode == 38) {	//up
-		ry += 0.1;
-	}
-	if (event.keyCode == 40) {	//down	
-		ry -= 0.1;	
-	}
-	if (event.keyCode == 37) {	//left		
-		
-	}
-	if (event.keyCode == 39) {	//right				
-		
-	}
-	if (event.keyCode == 32) {	//space - fire
-				
-	}
-	wry = (ry + 0.2);
-	//console.log('ry: ' + ry);
-	console.log('wry: ' + wry);
-	console.log('wry2: ' + (wry - rh));
-}
-
 //http://stackoverflow.com/questions/22941695/webgl-vertex-space-coordinates
-function initPlayerRacket(gl) {	
-	var verticesAndSize = new Float32Array([
-		-0.9,  0.2,  1.0,  1.0, 0.0, 0.0,
-		-0.9, -0.2,  1.0,  1.0, 0.0, 0.0,
-		-0.8,  0.2,  1.0,  1.0, 0.0, 0.0,
-		-0.8, -0.2,  1.0,  1.0, 0.0, 0.0
-	]);	
-
+function initPlayerRacket(gl) {
 	var allBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, allBuffer);
-	gl.bufferData(gl.ARRAY_BUFFER, verticesAndSize, gl.STATIC_DRAW);
+	gl.bufferData(gl.ARRAY_BUFFER, racketVertices, gl.STATIC_DRAW);
 
-	var FSIZE = verticesAndSize.BYTES_PER_ELEMENT;
+	var FSIZE = racketVertices.BYTES_PER_ELEMENT;
 	
 	gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, FSIZE * 6, 0);
 	gl.enableVertexAttribArray(a_Position);
@@ -206,17 +257,10 @@ function initPlayerRacket(gl) {
 	gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);
 	gl.enableVertexAttribArray(a_Color);
 
-	return (verticesAndSize.length / 6);
+	return (racketVertices.length / 6);
 }
 
 function initBall(gl) {
-	var ballVertices = new Float32Array([
-		-0.1,  0.1,  0.1,  0.5, 0.5, 0.0,
-		-0.1, -0.1,  0.1,  0.5, 0.5, 0.0,
-		 0.1,  0.1,  0.1,  0.5, 0.5, 0.0,
-		 0.1, -0.1,  0.1,  0.5, 0.5, 0.0
-	]);
-
 	var allBuffer = gl.createBuffer();
 	gl.bindBuffer(gl.ARRAY_BUFFER, allBuffer);
 	gl.bufferData(gl.ARRAY_BUFFER, ballVertices, gl.STATIC_DRAW);
@@ -263,6 +307,12 @@ function fpsCalculation() {
 	//gl.font = "bold 12px courier";
 	//gl.fillText('fps:' + Math.floor(_fps), 2, 10);
 	console.log('fps: ' + Math.floor(_fps));
+}
+
+function ffix(fnum) {
+	var str = fnum.toFixed(FLOATING_DECIMALS);
+	//console.log('fnum: ' + fnum + ' strNum: ' + str + ' parseFloat: ' + parseFloat(str));
+	return parseFloat(str);
 }
 
 window.onload = function() {
