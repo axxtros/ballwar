@@ -14,7 +14,7 @@ var a_PointSize;
 var a_Color;
 var u_xformMatrix;
 
-//game fps variables
+//game loop and fps variables
 var fps = GAME_SPEED_INDEX;
 var now;
 var then;
@@ -55,10 +55,10 @@ var racketVertices = new Float32Array([
 ]);
 
 var ballVertices = new Float32Array([
-	-ball.cmx,  		 ball.cmy,  		  0.1,  0.5, 0.5, 0.0,
-	-ball.cmx,  		 ball.cmy - ball.cd,  0.1,  0.5, 0.5, 0.0,
-	 ball.cmx - ball.cd, ball.cmy,  		  0.1,  0.5, 0.5, 0.0,
-	 ball.cmx - ball.cd, ball.cmy - ball.cd,  0.1,  0.5, 0.5, 0.0
+	-ball.cmx,  		 ball.cmy,  		  1.0,  0.5, 0.5, 0.0,
+	-ball.cmx,  		 ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0,
+	 ball.cmx - ball.cd, ball.cmy,  		  1.0,  0.5, 0.5, 0.0,
+	 ball.cmx - ball.cd, ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0
 ]);
 
 function initGame() {
