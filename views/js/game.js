@@ -13,6 +13,7 @@ var a_Position;
 var a_PointSize;
 var a_Color;
 var u_xformMatrix;
+var a_TexCoord;
 
 //game loop and fps variables
 var fps = GAME_SPEED_INDEX;
@@ -53,11 +54,18 @@ var racketVertices = new Float32Array([
 	-racket.cmx + racket.cw, racket.cmy,  			  1.0,  1.0, 0.0, 0.0,
 	-racket.cmx + racket.cw, racket.cmy - racket.ch,  1.0,  1.0, 0.0, 0.0
 ]);
-
+/*
 var ballVertices = new Float32Array([
-	-ball.cmx,  		 ball.cmy,  		  1.0,  0.5, 0.5, 0.0,
-	-ball.cmx,  		 ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0,
-	 ball.cmx - ball.cd, ball.cmy,  		  1.0,  0.5, 0.5, 0.0,
+	-ball.cmx,  		 ball.cmy,  		  1.0,  0.5, 0.5, 0.0, 0.0, 1.0,
+	-ball.cmx,  		 ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0, 0.0, 0.0,
+	 ball.cmx - ball.cd, ball.cmy,  		  1.0,  0.5, 0.5, 0.0, 1.0, 1.0,
+	 ball.cmx - ball.cd, ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0, 1.0, 0.0
+]);
+*/
+var ballVertices = new Float32Array([
+	-ball.cmx,  		 ball.cmy,  		  1.0,  0.5, 0.5, 0.0, 
+	-ball.cmx,  		 ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0, 
+	 ball.cmx - ball.cd, ball.cmy,  		  1.0,  0.5, 0.5, 0.0, 
 	 ball.cmx - ball.cd, ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0
 ]);
 
@@ -66,7 +74,8 @@ function initGame() {
 	a_Position = gl.getAttribLocation(glProgram, 'a_Position');
 	a_PointSize = gl.getAttribLocation(glProgram, 'a_PointSize');
 	a_Color = gl.getAttribLocation(glProgram, 'a_Color');
-	u_xformMatrix = gl.getUniformLocation(glProgram, 'u_xformMatrix');	
+	u_xformMatrix = gl.getUniformLocation(glProgram, 'u_xformMatrix');
+	a_TexCoord = gl.getAttribLocation(glProgram, 'a_TexCoord');	
 
 	//racket world coordinates (left-top vertex coordinate)
 	racket.wx = ffix(-racket.cmx);
@@ -231,13 +240,42 @@ function draw() {
 
 	//ball
 	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(ball.tx, ball.ty, 0));
+	var m = initBall(gl);
+	//textureDraw(gl, m);
+	gl.drawArrays(gl.TRIANGLE_STRIP, 0, m);
+
+	/*
+	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(ball.tx, ball.ty, 0));
 	var m = initBall(gl);	
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, m);
+	*/
 
 	/*
 	gl.vertexAttrib3f(0.0, 0.0, 0.0, 1.0);
 	gl.drawArrays(gl.POINTS, 0, 1);	
 	*/
+}
+
+function textureDraw(gl, n) {
+	var texture = gl.createTexture();
+	var u_Sampler = gl.getUniformLocation(glProgram, 'u_Sampler');
+	image = new Image();
+
+	image.onload = function() {		
+		loadTexture(gl, n, texture, u_Sampler, image);			
+		gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
+	};	
+	image.src = 'brick001.jpg';
+	//image.src = 'ball_texture.png';
+}
+
+function loadTexture(gl, n, texture, u_Sampler, image) {
+	gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+	gl.activeTexture(gl.TEXTURE0);
+	gl.bindTexture(gl.TEXTURE_2D, texture);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);	
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);	
+	gl.uniform1i(u_Sampler, 0);	
 }
 
 //http://stackoverflow.com/questions/22941695/webgl-vertex-space-coordinates
@@ -275,7 +313,10 @@ function initBall(gl) {
 	
 	gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);
 	gl.enableVertexAttribArray(a_Color);
-
+	/*
+	gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 8, FSIZE * 6);
+	gl.enableVertexAttribArray(a_TexCoord);
+	*/
 	return (ballVertices.length / 6);
 }
 
