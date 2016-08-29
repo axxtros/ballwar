@@ -48,20 +48,28 @@ var ball = {
 };
 
 //webgl object matrices
+/*
+var racketVertices = new Float32Array([
+	-racket.cmx,  			 racket.cmy,  			  1.0,  1.0, 0.0, 0.0,  0.0, 1.0,
+	-racket.cmx, 			 racket.cmy - racket.ch,  1.0,  1.0, 0.0, 0.0,  0.0, 0.0,
+	-racket.cmx + racket.cw, racket.cmy,  			  1.0,  1.0, 0.0, 0.0,  1.0, 1.0,
+	-racket.cmx + racket.cw, racket.cmy - racket.ch,  1.0,  1.0, 0.0, 0.0,  1.0, 0.0
+]);
+
+var ballVertices = new Float32Array([
+	-ball.cmx,  		 ball.cmy,  		  1.0,  0.5, 0.5, 0.0,  0.0, 1.0,
+	-ball.cmx,  		 ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0,  0.0, 0.0,
+	 ball.cmx - ball.cd, ball.cmy,  		  1.0,  0.5, 0.5, 0.0,  1.0, 1.0,
+	 ball.cmx - ball.cd, ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0,  1.0, 0.0
+]);
+*/
 var racketVertices = new Float32Array([
 	-racket.cmx,  			 racket.cmy,  			  1.0,  1.0, 0.0, 0.0,
 	-racket.cmx, 			 racket.cmy - racket.ch,  1.0,  1.0, 0.0, 0.0,
 	-racket.cmx + racket.cw, racket.cmy,  			  1.0,  1.0, 0.0, 0.0,
 	-racket.cmx + racket.cw, racket.cmy - racket.ch,  1.0,  1.0, 0.0, 0.0
 ]);
-/*
-var ballVertices = new Float32Array([
-	-ball.cmx,  		 ball.cmy,  		  1.0,  0.5, 0.5, 0.0, 0.0, 1.0,
-	-ball.cmx,  		 ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0, 0.0, 0.0,
-	 ball.cmx - ball.cd, ball.cmy,  		  1.0,  0.5, 0.5, 0.0, 1.0, 1.0,
-	 ball.cmx - ball.cd, ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0, 1.0, 0.0
-]);
-*/
+
 var ballVertices = new Float32Array([
 	-ball.cmx,  		 ball.cmy,  		  1.0,  0.5, 0.5, 0.0, 
 	-ball.cmx,  		 ball.cmy - ball.cd,  1.0,  0.5, 0.5, 0.0, 
@@ -236,19 +244,14 @@ function draw() {
 	//player racket
 	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(racket.tx, racket.ty, 0));
 	var n = initPlayerRacket(gl);	
+	//drawBallWithTexture(gl, n);
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
 
 	//ball
 	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(ball.tx, ball.ty, 0));
 	var m = initBall(gl);
-	//textureDraw(gl, m);
+	//drawBallWithTexture(gl, m);
 	gl.drawArrays(gl.TRIANGLE_STRIP, 0, m);
-
-	/*
-	gl.uniformMatrix4fv(u_xformMatrix, false, translateMatrice(ball.tx, ball.ty, 0));
-	var m = initBall(gl);	
-	gl.drawArrays(gl.TRIANGLE_STRIP, 0, m);
-	*/
 
 	/*
 	gl.vertexAttrib3f(0.0, 0.0, 0.0, 1.0);
@@ -256,7 +259,7 @@ function draw() {
 	*/
 }
 
-function textureDraw(gl, n) {
+function drawBallWithTexture(gl, n) {
 	var texture = gl.createTexture();
 	var u_Sampler = gl.getUniformLocation(glProgram, 'u_Sampler');
 	image = new Image();
@@ -264,7 +267,7 @@ function textureDraw(gl, n) {
 	image.onload = function() {		
 		loadTexture(gl, n, texture, u_Sampler, image);			
 		gl.drawArrays(gl.TRIANGLE_STRIP, 0, n);
-	};	
+	};
 	image.src = 'brick001.jpg';
 	//image.src = 'ball_texture.png';
 }
@@ -294,7 +297,10 @@ function initPlayerRacket(gl) {
 	
 	gl.vertexAttribPointer(a_Color, 3, gl.FLOAT, false, FSIZE * 6, FSIZE * 3);
 	gl.enableVertexAttribArray(a_Color);
-
+	/*
+	gl.vertexAttribPointer(a_TexCoord, 2, gl.FLOAT, false, FSIZE * 8, FSIZE * 6);
+	gl.enableVertexAttribArray(a_TexCoord);
+	*/
 	return (racketVertices.length / 6);
 }
 

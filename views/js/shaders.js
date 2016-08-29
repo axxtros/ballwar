@@ -29,5 +29,5 @@ var FSHADER_SOURCE =
  	'void main() {\n' + 	 	
  	'	//gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);\n' +
  	' 	gl_FragColor = v_Color;\n' +
- 	'   //gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' + //texture
+ 	'   //gl_FragColor = texture2D(u_Sampler, v_TexCoord);\n' +
  	'}\n';
